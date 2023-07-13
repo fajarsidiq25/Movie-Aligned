@@ -10,6 +10,7 @@ from flask_mail import Mail, Message
 import cv2
 import numpy as np
 import pymysql
+import sys
 pymysql.install_as_MySQLdb()
 from tensorflow.keras.models import model_from_json  
 from tensorflow.keras.preprocessing import image 
@@ -371,6 +372,22 @@ class get_movies(Resource):
         cursor.close()
         return movie_data
 
+@app.route('/stop', methods=['POST'])
+def stop():
+    emotions_count = request.json.get('emotions_count', {})
+    timestamp = datetime.now()
+
+    for emotion_label, count in emotions_count.items():
+        # Save the emotion data to the database
+        history_entry = History(emotion_label=emotion_label, count=count, timestamp=timestamp)
+        db.session.add(history_entry)
+
+    db.session.commit()
+
+    # Stop the Flask application and terminate all processes
+    sys.exit()
+
+    return jsonify(message='Emotion data saved successfully')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
